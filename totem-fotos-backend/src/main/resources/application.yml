@@ -1,0 +1,14 @@
+spring:
+  application:
+    name: totem-fotos
+  profiles:
+    active: local
+
+server:
+  port: 8080
+  # 0.0.0.0 para o celular do usuario conseguir acessar via IP do hotspot local
+  address: 0.0.0.0
+
+totem:
+  armazenamento:
+    diretorio-base: ./data/sessoes

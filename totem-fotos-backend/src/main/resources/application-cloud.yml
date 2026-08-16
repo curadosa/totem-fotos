@@ -1,0 +1,7 @@
+# Profile para quando o totem passar a se comunicar com a API central na VPS
+# (ativado depois, trocando SPRING_PROFILES_ACTIVE=cloud). Nao precisa mexer
+# no restante do codigo - so preencher esta URL quando chegar a hora.
+totem:
+  modo: cloud
+  central:
+    url: https://SUA_VPS_AQUI

@@ -1,0 +1,3 @@
+# Profile usado com a cabine unica rodando localmente na maquina do totem.
+totem:
+  modo: local
