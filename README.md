@@ -13,7 +13,7 @@ cd totem-fotos-backend
 mvn spring-boot:run
 ```
 
-Sobe em `http://localhost:8080` com o profile `local` ativo. As sessões ficam em memória e as fotos são salvas temporariamente em `./data/sessoes/{data}/{sessaoId}/foto.jpg` ou `foto.png`.
+Sobe em `http://localhost:8080` com o profile `local` ativo. As sessões e a sinalização WebRTC ficam temporariamente em memória; o backend não recebe nem armazena as fotos.
 
 `PixServiceStub` simula o pagamento como aprovado automaticamente. Ele não gera uma cobrança pagável.
 
@@ -29,7 +29,7 @@ npm run dev
 
 Sobe em `http://localhost:5173`. Ao acessar por outro aparelho na rede, o frontend usa automaticamente o mesmo IP na porta 8080 para encontrar o backend. É possível sobrescrever esse endereço com `VITE_API_URL`. Se o totem for aberto por `localhost`, defina `VITE_PUBLIC_URL=http://IP-DO-TOTEM:5173` para o QR Code usar um endereço acessível pelo celular.
 
-Em navegadores móveis, a câmera ao vivo (`getUserMedia`) exige HTTPS quando o acesso não é por `localhost`. Nesse caso, a tela oferece “Abrir câmera do celular”, usando a captura nativa do aparelho.
+A rota `/capturar` usa exclusivamente a câmera conectada ao totem. O navegador do totem deve acessar a aplicação por `localhost` ou HTTPS para liberar `getUserMedia`.
 
 Para acesso pela rede, as portas 5173 e 8080 precisam estar liberadas para a rede local. O Vite é servidor de desenvolvimento e não deve ser usado como servidor de produção.
 
@@ -38,7 +38,7 @@ Para acesso pela rede, as portas 5173 e 8080 precisam estar liberadas para a red
 1. Boas-vindas e consentimento.
 2. Escolha entre Polaroid (R$ 4,50), Normal 10×15 (R$ 5,50) e conjunto com 6 fotos 3×4 (R$ 19,90).
 3. Escolha entre tirar foto e enviar do celular.
-4. Captura ao vivo com contagem, captura nativa como fallback ou upload por QR Code com token de cinco minutos.
+4. Captura local ou transferência direta do celular para o navegador do totem por WebRTC, iniciada por QR Code.
 5. Primeira revisão da foto original.
 6. Segunda revisão do formato de impressão.
 7. QR Code Pix e consulta periódica do status.

@@ -27,7 +27,7 @@ import { onMounted, onUnmounted, ref, computed } from 'vue'
 import { useRouter } from 'vue-router'
 import QRCode from 'qrcode'
 import api from '../services/api'
-import { sessao } from '../services/sessaoState'
+import { limparFotoLocal, limparSessaoLocal, sessao } from '../services/sessaoState'
 
 const router = useRouter()
 const canvas = ref(null)
@@ -67,8 +67,12 @@ function iniciarPolling() {
       clearInterval(polling)
       clearInterval(cronometro)
       setTimeout(async () => {
-        await api.post(`/sessoes/${sessao.id}/finalizar`)
-        router.push('/imprimindo')
+        try {
+          await api.post(`/sessoes/${sessao.id}/finalizar`)
+        } finally {
+          limparFotoLocal()
+          router.push('/imprimindo')
+        }
       }, 1500)
     }
   }, 2000)
@@ -83,11 +87,12 @@ function iniciarCronometro() {
 async function cancelar() {
   clearInterval(polling)
   clearInterval(cronometro)
-  await api.post(`/sessoes/${sessao.id}/finalizar`)
-  sessao.id = null
-  sessao.fotoPreviewUrl = null
-  sessao.produto = null
-  router.push('/home')
+  try {
+    await api.post(`/sessoes/${sessao.id}/finalizar`)
+  } finally {
+    limparSessaoLocal()
+    router.push('/home')
+  }
 }
 
 onMounted(gerarCobranca)

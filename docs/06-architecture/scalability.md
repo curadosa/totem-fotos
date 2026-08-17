@@ -2,22 +2,22 @@
 
 ## Escopo Atual
 
-A arquitetura atual foi desenhada para um protótipo de cabine única. `ConcurrentHashMap` e disco local não devem ser tratados como solução multi-ponto.
+A arquitetura atual foi desenhada para um protótipo de cabine única. Sessões em `ConcurrentHashMap` e fotos na memória do navegador não oferecem recuperação após reinício.
 
 ## Limites Imediatos
 
 - Sessões pertencem a uma única instância do backend.
-- Fotos pertencem ao disco da máquina local.
+- Fotos pertencem somente à aba do navegador do totem.
 - Não existe recuperação após reinício.
-- Polling de upload e pagamento cresce linearmente com sessões abertas.
-- Não há controle de espaço em disco ou limpeza de diretórios vazios.
+- Polling de sinalização WebRTC e pagamento cresce linearmente com sessões abertas.
+- Recarregar a página elimina a foto e impede recuperar a sessão visual.
 
 ## Evolução Recomendada por Necessidade
 
 ### Piloto de um totem
 
 - Persistir pedido, produto, pagamento e impressão em banco local.
-- Manter fotos em armazenamento temporário local com rotina de limpeza.
+- Manter a foto apenas na memória durante a sessão e integrá-la ao agente local de impressão sem persistência desnecessária.
 - Implementar agente de impressão local.
 - Adicionar logs estruturados, health check e watchdog.
 
@@ -50,7 +50,7 @@ A arquitetura atual foi desenhada para um protótipo de cabine única. `Concurre
 - Mais de um totem precisa usar a mesma impressora.
 - Operador não consegue diagnosticar falhas localmente.
 - O volume de polling afeta a API.
-- Fotos permanecem no disco após sessões encerradas.
+- Impressão física passa a exigir transferência segura da foto ao agente local sem retenção indevida.
 
 ## Decisões Pendentes
 

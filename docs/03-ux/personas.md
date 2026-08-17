@@ -41,7 +41,7 @@ Pessoa que escolhe Polaroid ou 10×15 em evento, passeio ou estabelecimento.
 ### Necessidades de UX
 
 - Preço antecipado.
-- Fallback de câmera nativa.
+- Nova tentativa quando a câmera conectada ao totem falhar.
 - Upload por QR Code sem cadastro.
 - Feedback durante pagamento e impressão.
 

@@ -12,7 +12,7 @@
 - Uma ação primária clara por etapa.
 - Preço, progresso e próximo passo sempre visíveis.
 - Mensagens de erro devem informar uma ação possível.
-- No acesso móvel por HTTP, usar captura nativa quando `getUserMedia` não estiver disponível.
+- A rota de captura usa somente a câmera conectada ao totem; o celular participa apenas do fluxo separado por QR Code.
 
 ## Tecnologia
 

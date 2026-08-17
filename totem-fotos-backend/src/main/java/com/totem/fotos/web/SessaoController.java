@@ -32,7 +32,7 @@ public class SessaoController {
         return sessaoService.buscar(id);
     }
 
-    /** Chamado apos a impressao ser concluida - apaga a foto do disco e libera o totem. */
+    /** Chamado apos a impressao; encerra os metadados temporarios da sessao. */
     @PostMapping("/{id}/finalizar")
     public void finalizar(@PathVariable String id) {
         sessaoService.finalizar(id);

@@ -8,15 +8,13 @@
 <script setup>
 import { onMounted } from 'vue'
 import { useRouter } from 'vue-router'
-import { sessao } from '../services/sessaoState'
+import { limparSessaoLocal } from '../services/sessaoState'
 
 const router = useRouter()
 
 onMounted(() => {
   setTimeout(() => {
-    sessao.id = null
-    sessao.fotoPreviewUrl = null
-    sessao.produto = null
+    limparSessaoLocal()
     router.push('/')
   }, 6000)
 })

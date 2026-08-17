@@ -33,7 +33,11 @@ import { computed, onMounted, onUnmounted, ref } from 'vue'
 import { useRouter } from 'vue-router'
 import QRCode from 'qrcode'
 import api from '../services/api'
-import { sessao } from '../services/sessaoState'
+import { definirFotoLocal, sessao } from '../services/sessaoState'
+import { aguardarColetaIce, criarConexaoFoto } from '../services/webRtcFoto'
+
+const TAMANHO_MAXIMO = 10 * 1024 * 1024
+const TIPOS_ACEITOS = ['image/jpeg', 'image/png']
 
 const router = useRouter()
 const canvas = ref(null)
@@ -44,6 +48,11 @@ const segundosRestantes = ref(300)
 let polling = null
 let relogio = null
 let consultando = false
+let conexao = null
+let canal = null
+let metadadosFoto = null
+let partesFoto = []
+let bytesRecebidos = 0
 
 const tempoFormatado = computed(() => {
   const minutos = Math.floor(segundosRestantes.value / 60)
@@ -58,14 +67,45 @@ function pararTemporizadores() {
   relogio = null
 }
 
-async function iniciar() {
+function encerrarConexao() {
+  canal?.close()
+  conexao?.removeEventListener('connectionstatechange', acompanharConexao)
+  conexao?.close()
+  canal = null
+  conexao = null
+  metadadosFoto = null
+  partesFoto = []
+  bytesRecebidos = 0
+}
+
+function encerrarTudo() {
   pararTemporizadores()
+  encerrarConexao()
+}
+
+async function iniciar() {
+  encerrarTudo()
   carregando.value = true
   erro.value = null
   segundosRestantes.value = 300
 
   try {
-    const { data } = await api.post(`/sessoes/${sessao.id}/foto/celular/iniciar`)
+    if (!window.RTCPeerConnection) {
+      throw new Error('Este navegador não oferece conexão direta.')
+    }
+
+    conexao = criarConexaoFoto()
+    canal = conexao.createDataChannel('foto', { ordered: true })
+    prepararRecebimento(canal)
+    conexao.addEventListener('connectionstatechange', acompanharConexao)
+
+    await conexao.setLocalDescription(await conexao.createOffer())
+    await aguardarColetaIce(conexao)
+
+    const { data } = await api.post(
+      `/sessoes/${sessao.id}/foto/celular/iniciar`,
+      conexao.localDescription.toJSON()
+    )
     segundosRestantes.value = data.expiraEmSegundos
 
     const origemPublica = import.meta.env.VITE_PUBLIC_URL || window.location.origin
@@ -76,10 +116,11 @@ async function iniciar() {
 
     carregando.value = false
     iniciarRelogio()
-    polling = setInterval(consultarEnvio, 1500)
-  } catch {
+    polling = setInterval(consultarResposta, 300)
+  } catch (e) {
+    encerrarTudo()
     carregando.value = false
-    erro.value = 'Não foi possível gerar o link de envio. Verifique a conexão.'
+    erro.value = e.message || 'Não foi possível gerar o link de envio.'
   }
 }
 
@@ -87,41 +128,105 @@ function iniciarRelogio() {
   relogio = setInterval(() => {
     segundosRestantes.value -= 1
     if (segundosRestantes.value <= 0) {
-      pararTemporizadores()
-      erro.value = 'Este QR Code expirou.'
+      falharConexao('Este QR Code expirou.')
     }
   }, 1000)
 }
 
-async function consultarEnvio() {
+async function consultarResposta() {
   if (consultando) return
   consultando = true
   try {
-    const { data: estadoSessao } = await api.get(`/sessoes/${sessao.id}`)
-    if (estadoSessao.estado === 'REVISANDO_FOTO') {
-      pararTemporizadores()
-      const { data: foto } = await api.get(`/sessoes/${sessao.id}/foto`, { responseType: 'blob' })
-      if (sessao.fotoPreviewUrl?.startsWith('blob:')) {
-        URL.revokeObjectURL(sessao.fotoPreviewUrl)
-      }
-      sessao.fotoPreviewUrl = URL.createObjectURL(foto)
-      router.push('/revisar')
+    const { data } = await api.get(`/sessoes/${sessao.id}/foto/celular/conexao/resposta`)
+    if (data.resposta && !conexao.remoteDescription) {
+      clearInterval(polling)
+      polling = null
+      await conexao.setRemoteDescription(data.resposta)
     }
-  } catch {
-    pararTemporizadores()
+  } catch (e) {
+    encerrarTudo()
     erro.value = 'A conexão com o totem foi interrompida.'
   } finally {
     consultando = false
   }
 }
 
-function voltar() {
+function prepararRecebimento(canalFoto) {
+  canalFoto.binaryType = 'arraybuffer'
+  canalFoto.addEventListener('message', async event => {
+    try {
+      if (typeof event.data === 'string') {
+        const mensagem = JSON.parse(event.data)
+        if (mensagem.tipo === 'foto') {
+          validarMetadados(mensagem)
+          metadadosFoto = mensagem
+          partesFoto = []
+          bytesRecebidos = 0
+        } else if (mensagem.tipo === 'fim') {
+          await concluirRecebimento()
+        }
+        return
+      }
+
+      if (!metadadosFoto) throw new Error('Dados da foto recebidos fora de ordem.')
+      bytesRecebidos += event.data.byteLength
+      if (bytesRecebidos > metadadosFoto.tamanho || bytesRecebidos > TAMANHO_MAXIMO) {
+        throw new Error('O tamanho recebido não corresponde à foto selecionada.')
+      }
+      partesFoto.push(event.data)
+    } catch (e) {
+      falharConexao(e.message)
+    }
+  })
+}
+
+function validarMetadados(dados) {
+  if (!Number.isInteger(dados.tamanho) || dados.tamanho <= 0 || dados.tamanho > TAMANHO_MAXIMO) {
+    throw new Error('A foto deve ter no máximo 10 MB.')
+  }
+  if (!TIPOS_ACEITOS.includes(dados.mime)) {
+    throw new Error('Envie uma foto JPEG ou PNG.')
+  }
+}
+
+async function concluirRecebimento() {
+  if (!metadadosFoto || bytesRecebidos !== metadadosFoto.tamanho) {
+    throw new Error('A transferência da foto ficou incompleta.')
+  }
+
+  const foto = new File(partesFoto, metadadosFoto.nome || 'foto', { type: metadadosFoto.mime })
+  definirFotoLocal(foto)
   pararTemporizadores()
+  try {
+    await api.post(`/sessoes/${sessao.id}/foto/celular/conexao/concluir`)
+  } catch {
+    // A confirmação direta abaixo ainda informa o celular se a sinalização falhar.
+  }
+  if (canal?.readyState === 'open') {
+    canal.send(JSON.stringify({ tipo: 'recebida' }))
+  }
+  router.push('/revisar')
+}
+
+function acompanharConexao() {
+  if (conexao && ['failed', 'closed'].includes(conexao.connectionState)) {
+    falharConexao('Não foi possível manter a conexão direta com o celular.')
+  }
+}
+
+function falharConexao(mensagem) {
+  encerrarTudo()
+  carregando.value = false
+  erro.value = mensagem
+}
+
+function voltar() {
+  encerrarTudo()
   router.back()
 }
 
 onMounted(iniciar)
-onUnmounted(pararTemporizadores)
+onUnmounted(encerrarTudo)
 </script>
 
 <style scoped>

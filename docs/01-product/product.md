@@ -19,7 +19,7 @@ Os preços são definidos no enum `ProdutoFoto` do backend. O frontend mantém o
 1. Consentimento e início.
 2. Escolha do produto e visualização do preço.
 3. Escolha entre tirar foto ou enviar do celular.
-4. Captura com câmera ao vivo, câmera nativa como fallback ou upload por QR Code.
+4. Captura local ou transferência direta do celular por WebRTC, iniciada por QR Code.
 5. Primeira revisão: qualidade da foto original.
 6. Segunda revisão: corte e disposição no formato de impressão.
 7. Geração e exibição da cobrança Pix.
@@ -37,8 +37,8 @@ Os preços são definidos no enum `ProdutoFoto` do backend. O frontend mantém o
 - Interface Vue otimizada para uma tela lógica de 480×800.
 - API local Spring Boot.
 - Sessões em memória.
-- Foto temporária em disco por data e sessão.
-- Token de upload por celular com validade de cinco minutos.
+- Foto mantida somente na memória do navegador do totem durante a sessão.
+- Conexão direta com o celular por WebRTC e token de sinalização válido por cinco minutos.
 - Pix por adaptador, com implementação simulada no profile `local`.
 
 ## Ainda Não Implementado

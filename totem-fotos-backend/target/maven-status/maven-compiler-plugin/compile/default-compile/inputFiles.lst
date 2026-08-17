@@ -1,8 +1,8 @@
 C:\desenv\aplic\totem-fotos\totem-fotos-backend\src\main\java\com\totem\fotos\config\WebConfig.java
+C:\desenv\aplic\totem-fotos\totem-fotos-backend\src\main\java\com\totem\fotos\domain\DescricaoWebRtc.java
 C:\desenv\aplic\totem-fotos\totem-fotos-backend\src\main\java\com\totem\fotos\domain\ProdutoFoto.java
 C:\desenv\aplic\totem-fotos\totem-fotos-backend\src\main\java\com\totem\fotos\domain\Sessao.java
 C:\desenv\aplic\totem-fotos\totem-fotos-backend\src\main\java\com\totem\fotos\domain\SessaoEstado.java
-C:\desenv\aplic\totem-fotos\totem-fotos-backend\src\main\java\com\totem\fotos\service\ArmazenamentoService.java
 C:\desenv\aplic\totem-fotos\totem-fotos-backend\src\main\java\com\totem\fotos\service\PixService.java
 C:\desenv\aplic\totem-fotos\totem-fotos-backend\src\main\java\com\totem\fotos\service\PixServiceStub.java
 C:\desenv\aplic\totem-fotos\totem-fotos-backend\src\main\java\com\totem\fotos\service\SessaoService.java

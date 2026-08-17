@@ -27,7 +27,7 @@ O frontend possui apenas scripts de desenvolvimento e build. O backend compila, 
 
 - Seleção e formatação de preço.
 - Renderização dos três layouts.
-- Comportamento do fallback de câmera.
+- Falha, permissão e nova tentativa da câmera conectada ao totem.
 - Limpeza de timers e URLs `blob:`.
 - Redirecionamento quando falta estado.
 

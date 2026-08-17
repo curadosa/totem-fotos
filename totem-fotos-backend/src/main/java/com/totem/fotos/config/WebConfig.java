@@ -6,7 +6,7 @@ import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
 
 /**
  * Libera CORS para o front rodando local (Vite, porta 5173) e para
- * qualquer dispositivo na mesma rede do totem (celular acessando o upload).
+ * qualquer dispositivo na mesma rede do totem (celular negociando o WebRTC).
  */
 @Configuration
 public class WebConfig implements WebMvcConfigurer {

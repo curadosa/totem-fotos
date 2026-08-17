@@ -17,23 +17,22 @@
 
 - O navegador solicita permissão para câmera.
 - Com permissão e contexto seguro, mostra preview, moldura e contagem regressiva.
-- Sem `getUserMedia`, mostra “Abrir câmera do celular”.
-- A imagem é enviada ao backend e exibida na primeira revisão.
+- Sem `getUserMedia`, informa que a câmera do totem está indisponível e permite tentar novamente.
+- A imagem permanece como `Blob` local e é exibida na primeira revisão.
 
-## Jornada de Upload por QR Code
+## Jornada de Transferência por QR Code
 
-1. Totem solicita token temporário.
+1. Totem cria oferta WebRTC e solicita token temporário de sinalização.
 2. Exibe URL em QR Code apontando para o IP local e porta 5173.
 3. Celular abre `/upload-celular` e escolhe uma imagem.
-4. Backend valida sessão, token e expiração.
-5. Totem consulta a sessão a cada dois segundos.
-6. Quando o estado muda para `REVISANDO_FOTO`, baixa a imagem e abre a revisão.
+4. Backend valida sessão, token e expiração e troca apenas oferta/resposta SDP.
+5. Celular envia a imagem pelo canal de dados WebRTC diretamente ao navegador do totem.
+6. Totem confirma o recebimento, guarda um `Blob` local e abre a revisão.
 
 ## Jornada de Refação
 
-- Em qualquer revisão, “Refazer” chama `DELETE /api/sessoes/{id}/foto`.
-- O backend remove o arquivo e muda o estado para `CAPTURANDO_FOTO`.
-- O frontend limpa a prévia e abre `/capturar`.
+- Em qualquer revisão, “Refazer” revoga a URL `blob:` e remove a referência local.
+- O frontend abre `/capturar` sem enviar a imagem ao backend.
 
 ## Jornada de Pagamento Atual
 
@@ -51,4 +50,4 @@
 - Atualizar a página perde o estado reativo do frontend.
 - Cronômetro visual ainda não expira a cobrança nem encerra o polling.
 - Uma falha no polling não possui tratamento específico.
-- O protótipo exclui a foto antes de uma impressão física confirmada.
+- O protótipo ainda não possui agente de impressão capaz de consumir a foto mantida no navegador.

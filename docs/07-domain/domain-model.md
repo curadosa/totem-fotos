@@ -22,15 +22,15 @@ Representa a interação temporária do início até finalização ou cancelamen
 - `criadaEm`: instante de criação.
 - `produto`: produto imutável da sessão.
 - `estado`: etapa técnica atual.
-- `caminhoFoto`: arquivo temporário.
-- `tokenUploadCelular` e `tokenExpiraEm`: autorização temporária de upload.
+- `tokenConexaoCelular` e `tokenExpiraEm`: autorização temporária da negociação WebRTC.
+- `ofertaWebRtc` e `respostaWebRtc`: sinalização SDP temporária, sem conteúdo da foto.
 - `pixTxId`: identificador da cobrança.
 
 ### Estados Implementados
 
 - `IDLE`
 - `CAPTURANDO_FOTO`
-- `AGUARDANDO_UPLOAD_CELULAR`
+- `AGUARDANDO_CONEXAO_CELULAR`
 - `REVISANDO_FOTO`
 - `AGUARDANDO_PAGAMENTO`
 - `PAGAMENTO_CONFIRMADO`
@@ -43,9 +43,9 @@ Nem todos os estados são usados completamente. Na primeira captura a sessão va
 ```mermaid
 stateDiagram-v2
     [*] --> IDLE: criar com produto
-    IDLE --> REVISANDO_FOTO: enviar captura
-    IDLE --> AGUARDANDO_UPLOAD_CELULAR: iniciar upload
-    AGUARDANDO_UPLOAD_CELULAR --> REVISANDO_FOTO: upload válido
+    IDLE --> REVISANDO_FOTO: captura local
+    IDLE --> AGUARDANDO_CONEXAO_CELULAR: iniciar WebRTC
+    AGUARDANDO_CONEXAO_CELULAR --> REVISANDO_FOTO: transferência direta concluída
     REVISANDO_FOTO --> CAPTURANDO_FOTO: refazer
     CAPTURANDO_FOTO --> REVISANDO_FOTO: nova captura
     REVISANDO_FOTO --> AGUARDANDO_PAGAMENTO: gerar Pix
@@ -56,7 +56,7 @@ stateDiagram-v2
 
 ## Foto
 
-Não é uma entidade persistida. É um arquivo `foto.jpg` ou `foto.png`, conforme o conteúdo validado, referenciado pela sessão e armazenado sob data e UUID.
+Não é uma entidade do backend. Durante a jornada, a imagem é um `File`/`Blob` mantido somente na memória do navegador do totem. A URL `blob:` é revogada ao refazer, cancelar ou finalizar a sessão.
 
 ## Conceitos Necessários para Produção
 

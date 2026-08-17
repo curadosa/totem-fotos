@@ -17,11 +17,6 @@ import java.util.concurrent.ConcurrentHashMap;
 public class SessaoService {
 
     private final Map<String, Sessao> sessoes = new ConcurrentHashMap<>();
-    private final ArmazenamentoService armazenamentoService;
-
-    public SessaoService(ArmazenamentoService armazenamentoService) {
-        this.armazenamentoService = armazenamentoService;
-    }
 
     public Sessao criar(ProdutoFoto produto) {
         Sessao sessao = new Sessao(produto);
@@ -51,19 +46,14 @@ public class SessaoService {
         transicionar(id, SessaoEstado.ERRO);
     }
 
-    /** Chamado apos a impressao (ou cancelamento). Remove a foto do disco e a sessao da memoria. */
+    /** Chamado apos a impressao ou cancelamento; a foto local é limpa pelo navegador. */
     public void finalizar(String id) {
         Sessao sessao = buscar(id);
         sessao.setEstado(SessaoEstado.FINALIZADA);
-        armazenamentoService.removerFoto(sessao.getCaminhoFoto());
         sessoes.remove(id);
     }
 
     public void remover(String id) {
-        Sessao sessao = sessoes.get(id);
-        if (sessao != null) {
-            armazenamentoService.removerFoto(sessao.getCaminhoFoto());
-        }
         sessoes.remove(id);
     }
 }

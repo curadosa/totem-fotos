@@ -25,7 +25,7 @@
 
 - Mostrar estado “Abrindo a câmera”.
 - Mostrar preview, moldura e contagem quando disponíveis.
-- Mostrar fallback nativo com explicação curta quando a câmera ao vivo não funcionar.
+- Mostrar orientação e ação de nova tentativa quando a câmera do totem não funcionar.
 - Mostrar falha de upload e permitir nova tentativa.
 
 ## Revisões

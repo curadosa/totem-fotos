@@ -12,10 +12,10 @@ Não há banco de dados, mensageria, painel administrativo ou serviço real de i
 ```mermaid
 flowchart LR
     T[Totem ou navegador] -->|HTTP :5173| F[Frontend Vue/Vite]
-    C[Celular na rede] -->|QR Code / upload| F
-    F -->|REST HTTP :8080| B[Backend Spring Boot]
+    C[Celular na rede] -->|Foto via WebRTC| F
+    C -->|Sinalização HTTP| B[Backend Spring Boot]
+    F -->|REST e sinalização HTTP :8080| B
     B --> S[Sessões em memória]
-    B --> D[Foto em disco local]
     B --> P[PixService]
     P --> PS[PixServiceStub no profile local]
     B -. planejado .-> I[Impressora física]
@@ -26,16 +26,16 @@ flowchart LR
 - Rotas declaradas em `src/main.js`.
 - Estado da sessão em objeto reativo simples (`sessaoState.js`).
 - API padrão no mesmo hostname do frontend, porta 8080.
-- Prévia local por URL `blob:` ou download da imagem da sessão.
+- Foto e prévia mantidas localmente por `Blob`, `File` e URL `blob:`.
+- Transferência celular → totem por canal de dados WebRTC; somente SDP passa pelo backend.
 - Layouts de impressão são apenas CSS na tela de revisão.
 
 ## Backend
 
 - `SessaoController`: cria, consulta e finaliza sessões.
-- `FotoController`: recebe, entrega e remove foto; emite e valida token de upload.
+- `FotoController`: negocia a conexão WebRTC e invalida sua sinalização temporária.
 - `PagamentoController`: cria cobrança e consulta status.
 - `SessaoService`: mantém `ConcurrentHashMap` de sessões.
-- `ArmazenamentoService`: valida JPEG/PNG e salva em `data/sessoes/{data}/{sessaoId}/foto.{jpg|png}`.
 - `PixService`: contrato de integração.
 
 ## Contratos REST Atuais
@@ -44,12 +44,12 @@ flowchart LR
 |---|---|---|
 | POST | `/api/sessoes` | Cria sessão com produto |
 | GET | `/api/sessoes/{id}` | Consulta sessão |
-| POST | `/api/sessoes/{id}/finalizar` | Remove foto e sessão |
-| POST | `/api/sessoes/{id}/foto` | Envia captura |
-| GET | `/api/sessoes/{id}/foto` | Baixa a foto |
-| DELETE | `/api/sessoes/{id}/foto` | Refaz a foto |
-| POST | `/api/sessoes/{id}/foto/celular/iniciar` | Emite token de upload |
-| POST | `/api/sessoes/{id}/foto/celular/upload` | Recebe upload com token |
+| POST | `/api/sessoes/{id}/finalizar` | Remove a sessão e seus metadados temporários |
+| POST | `/api/sessoes/{id}/foto/celular/iniciar` | Registra oferta SDP e emite token |
+| GET | `/api/sessoes/{id}/foto/celular/conexao` | Entrega a oferta SDP ao celular |
+| POST | `/api/sessoes/{id}/foto/celular/conexao/responder` | Registra a resposta SDP |
+| GET | `/api/sessoes/{id}/foto/celular/conexao/resposta` | Entrega a resposta SDP ao totem |
+| POST | `/api/sessoes/{id}/foto/celular/conexao/concluir` | Invalida token e sinalização |
 | POST | `/api/sessoes/{id}/pagamento` | Gera cobrança |
 | GET | `/api/sessoes/{id}/pagamento/status` | Consulta confirmação |
 
@@ -64,5 +64,6 @@ flowchart LR
 - Reiniciar o frontend perde o estado de navegação.
 - Não há separação persistente entre pedido, pagamento e impressão.
 - CORS aceita qualquer origem.
-- Não há autenticação, rate limit, validação robusta de arquivo ou tratamento global de erros.
+- Não há autenticação, rate limit, validação completa da imagem ou tratamento global de erros.
+- A conexão WebRTC atual usa somente candidatos locais, portanto exige que celular e totem consigam se comunicar na mesma rede.
 - A sessão é finalizada antes de uma confirmação real de impressão.

@@ -13,14 +13,12 @@
 
 <script setup>
 import { useRouter } from 'vue-router'
-import api from '../services/api'
-import { sessao } from '../services/sessaoState'
+import { limparFotoLocal, sessao } from '../services/sessaoState'
 
 const router = useRouter()
 
-async function refazer() {
-  await api.delete(`/sessoes/${sessao.id}/foto`)
-  sessao.fotoPreviewUrl = null
+function refazer() {
+  limparFotoLocal()
   router.push('/capturar')
 }
 

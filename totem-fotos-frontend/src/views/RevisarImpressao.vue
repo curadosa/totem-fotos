@@ -12,11 +12,16 @@
         :class="{ 'papel-10x15--paisagem': sessao.produto.id === 'SEIS_FOTOS_3X4' }"
       >
         <div v-if="sessao.produto.id === 'POLAROID'" class="polaroid">
-          <img :src="sessao.fotoPreviewUrl" alt="Prévia da foto no formato Polaroid">
+          <img
+            :key="sessao.fotoPreviewUrl"
+            :src="sessao.fotoPreviewUrl"
+            alt="Prévia da foto no formato Polaroid"
+          >
         </div>
 
         <img
           v-else-if="sessao.produto.id === 'NORMAL_10X15'"
+          :key="sessao.fotoPreviewUrl"
           class="foto-normal"
           :src="sessao.fotoPreviewUrl"
           alt="Prévia da foto no formato 10 por 15"
@@ -25,7 +30,7 @@
         <div v-else-if="sessao.produto.id === 'SEIS_FOTOS_3X4'" class="grade-3x4">
           <img
             v-for="numero in 6"
-            :key="numero"
+            :key="`${sessao.fotoPreviewUrl}-${numero}`"
             :src="sessao.fotoPreviewUrl"
             :alt="`Prévia da foto 3x4 número ${numero}`"
           >
@@ -43,18 +48,30 @@
 </template>
 
 <script setup>
+import { onBeforeMount } from 'vue'
 import { useRouter } from 'vue-router'
-import api from '../services/api'
-import { sessao } from '../services/sessaoState'
+import {
+  limparFotoLocal,
+  renovarFotoPreviewLocal,
+  sessao
+} from '../services/sessaoState'
 
 const router = useRouter()
 
-async function refazer() {
-  await api.delete(`/sessoes/${sessao.id}/foto`)
-  if (sessao.fotoPreviewUrl?.startsWith('blob:')) {
-    URL.revokeObjectURL(sessao.fotoPreviewUrl)
+onBeforeMount(() => {
+  if (!sessao.produto) {
+    router.replace('/home')
+    return
   }
-  sessao.fotoPreviewUrl = null
+  if (!sessao.fotoLocal) {
+    router.replace('/capturar')
+    return
+  }
+  renovarFotoPreviewLocal()
+})
+
+function refazer() {
+  limparFotoLocal()
   router.push('/capturar')
 }
 

@@ -8,7 +8,7 @@ Validar, em um único ponto físico, se pessoas concluem o fluxo de escolha, cap
 
 - Três produtos com preços controlados pelo backend.
 - Captura pela câmera do totem.
-- Fallback de câmera nativa em navegador móvel.
+- Recuperação com nova tentativa quando a câmera do totem estiver indisponível.
 - Upload do celular por QR Code e token temporário.
 - Revisão da foto original.
 - Revisão do formato final.

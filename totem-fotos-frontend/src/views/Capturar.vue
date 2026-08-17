@@ -23,13 +23,22 @@
       </div>
 
       <div v-else-if="!cameraDisponivel" class="mensagem-camera">
-        <p class="mensagem-titulo">Use a câmera do celular</p>
-        <p>A câmera ao vivo não está disponível neste acesso pela rede.</p>
+        <p class="mensagem-titulo">Câmera indisponível</p>
+        <p>Verifique se a câmera do totem está conectada e se a permissão foi concedida.</p>
       </div>
     </div>
 
+    <label v-if="cameras.length > 1" class="seletor-camera">
+      <span>Webcam</span>
+      <select v-model="cameraSelecionada" :disabled="carregandoCamera" @change="trocarCamera">
+        <option v-for="camera in cameras" :key="camera.deviceId" :value="camera.deviceId">
+          {{ camera.label }}
+        </option>
+      </select>
+    </label>
+
     <p v-if="cameraDisponivel" class="instrucao">Centralize seu rosto na moldura</p>
-    <p v-else class="instrucao">Ao tocar abaixo, a câmera nativa do aparelho será aberta.</p>
+    <p v-else class="instrucao">A foto será mantida somente neste totem durante a sessão.</p>
     <p v-if="erro" class="erro">{{ erro }}</p>
 
     <button
@@ -38,27 +47,24 @@
       :disabled="!cameraPronta || contagem !== null || enviando"
       @click="iniciarContagem"
     >
-      {{ enviando ? 'Enviando...' : 'Tirar foto' }}
+      {{ enviando ? 'Processando...' : 'Tirar foto' }}
     </button>
 
-    <label v-else class="botao botao-primario botao-arquivo" :class="{ desabilitado: enviando }">
-      {{ enviando ? 'Enviando...' : 'Abrir câmera do celular' }}
-      <input
-        type="file"
-        accept="image/*"
-        capture="user"
-        :disabled="enviando"
-        @change="capturarComCelular"
-      >
-    </label>
+    <button
+      v-else
+      class="botao botao-primario"
+      :disabled="carregandoCamera"
+      @click="abrirCamera"
+    >
+      {{ carregandoCamera ? 'Abrindo câmera...' : 'Tentar abrir câmera' }}
+    </button>
   </div>
 </template>
 
 <script setup>
 import { onMounted, onUnmounted, ref } from 'vue'
 import { useRouter } from 'vue-router'
-import api from '../services/api'
-import { sessao } from '../services/sessaoState'
+import { definirFotoLocal } from '../services/sessaoState'
 
 const router = useRouter()
 const video = ref(null)
@@ -68,35 +74,111 @@ const cameraDisponivel = ref(false)
 const cameraPronta = ref(false)
 const enviando = ref(false)
 const erro = ref(null)
+const cameras = ref([])
+const cameraSelecionada = ref('')
 let stream = null
 let intervaloContagem = null
 
-onMounted(abrirCamera)
+onMounted(() => {
+  abrirCamera()
+  navigator.mediaDevices?.addEventListener?.('devicechange', carregarCameras)
+})
 
 onUnmounted(() => {
   clearInterval(intervaloContagem)
   stream?.getTracks().forEach(track => track.stop())
+  if (video.value) video.value.srcObject = null
+  navigator.mediaDevices?.removeEventListener?.('devicechange', carregarCameras)
 })
 
 async function abrirCamera() {
   erro.value = null
+  carregandoCamera.value = true
+  cameraDisponivel.value = false
+  cameraPronta.value = false
+  stream?.getTracks().forEach(track => track.stop())
+  stream = null
+
+  if (!window.isSecureContext) {
+    erro.value = 'A webcam exige acesso por localhost ou HTTPS. Abra o totem em http://localhost:5173.'
+    carregandoCamera.value = false
+    return
+  }
   if (!navigator.mediaDevices?.getUserMedia) {
+    erro.value = 'Este navegador não oferece acesso à webcam.'
     carregandoCamera.value = false
     return
   }
 
   try {
-    stream = await navigator.mediaDevices.getUserMedia({
-      video: { facingMode: 'user' },
-      audio: false
-    })
+    stream = await solicitarWebcam()
     video.value.srcObject = stream
+    await video.value.play()
     cameraDisponivel.value = true
+    await carregarCameras()
   } catch (e) {
+    stream?.getTracks().forEach(track => track.stop())
+    stream = null
+    if (video.value) video.value.srcObject = null
     cameraDisponivel.value = false
+    erro.value = mensagemErroCamera(e)
   } finally {
     carregandoCamera.value = false
   }
+}
+
+async function solicitarWebcam() {
+  const video = cameraSelecionada.value
+    ? {
+        deviceId: { exact: cameraSelecionada.value },
+        width: { ideal: 1280 },
+        height: { ideal: 720 },
+        frameRate: { ideal: 30 }
+      }
+    : true
+
+  try {
+    return await navigator.mediaDevices.getUserMedia({ video, audio: false })
+  } catch (e) {
+    if (cameraSelecionada.value && ['NotFoundError', 'OverconstrainedError'].includes(e.name)) {
+      cameraSelecionada.value = ''
+      return navigator.mediaDevices.getUserMedia({ video: true, audio: false })
+    }
+    throw e
+  }
+}
+
+async function carregarCameras() {
+  if (!navigator.mediaDevices?.enumerateDevices) return
+  try {
+    const dispositivos = await navigator.mediaDevices.enumerateDevices()
+    cameras.value = dispositivos
+      .filter(dispositivo => dispositivo.kind === 'videoinput')
+      .map((dispositivo, indice) => ({
+        deviceId: dispositivo.deviceId,
+        label: dispositivo.label || `Webcam ${indice + 1}`
+      }))
+
+    const dispositivoAtivo = stream?.getVideoTracks()[0]?.getSettings().deviceId
+    if (dispositivoAtivo) cameraSelecionada.value = dispositivoAtivo
+  } catch {
+    cameras.value = []
+  }
+}
+
+function trocarCamera() {
+  abrirCamera()
+}
+
+function mensagemErroCamera(e) {
+  const mensagens = {
+    NotAllowedError: 'Permissão da webcam negada. Libere o acesso nas configurações do navegador.',
+    NotFoundError: 'Nenhuma webcam foi encontrada. Verifique o cabo USB e tente novamente.',
+    NotReadableError: 'A webcam está sendo usada por outro programa. Feche-o e tente novamente.',
+    OverconstrainedError: 'A webcam não suporta a configuração solicitada.',
+    SecurityError: 'O navegador bloqueou a webcam. Use localhost ou HTTPS.'
+  }
+  return mensagens[e?.name] || 'Não foi possível acessar a webcam do totem.'
 }
 
 function iniciarContagem() {
@@ -123,31 +205,20 @@ async function capturarDoVideo() {
     erro.value = 'Não foi possível capturar a foto. Tente novamente.'
     return
   }
-  await enviarFoto(blob, 'foto.jpg')
+  prepararFotoLocal(blob, 'foto.jpg')
 }
 
-async function capturarComCelular(event) {
-  const arquivo = event.target.files?.[0]
-  if (!arquivo) return
-  await enviarFoto(arquivo, arquivo.name || 'foto.jpg')
-  event.target.value = ''
-}
-
-async function enviarFoto(arquivo, nomeArquivo) {
+function prepararFotoLocal(arquivo, nomeArquivo) {
   enviando.value = true
   erro.value = null
   try {
-    if (sessao.fotoPreviewUrl?.startsWith('blob:')) {
-      URL.revokeObjectURL(sessao.fotoPreviewUrl)
-    }
-    sessao.fotoPreviewUrl = URL.createObjectURL(arquivo)
-
-    const form = new FormData()
-    form.append('arquivo', arquivo, nomeArquivo)
-    await api.post(`/sessoes/${sessao.id}/foto`, form)
+    const foto = arquivo instanceof File
+      ? arquivo
+      : new File([arquivo], nomeArquivo, { type: arquivo.type || 'image/jpeg' })
+    definirFotoLocal(foto)
     router.push('/revisar')
-  } catch (e) {
-    erro.value = 'Não foi possível enviar a foto. Verifique a conexão e tente novamente.'
+  } catch {
+    erro.value = 'Não foi possível preparar a foto. Tente novamente.'
   } finally {
     enviando.value = false
   }
@@ -235,22 +306,31 @@ async function enviarFoto(arquivo, nomeArquivo) {
   font-size: 14px;
 }
 
+.seletor-camera {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  color: #6b6b66;
+  font-size: 13px;
+}
+
+.seletor-camera select {
+  flex: 1;
+  min-width: 0;
+  padding: 10px 12px;
+  border: 1px solid #d7d5cc;
+  border-radius: 10px;
+  background: #fff;
+  color: #1c1c1a;
+}
+
 .erro {
   color: #c83c3b;
   text-align: center;
   font-size: 13px;
 }
 
-.botao-arquivo {
-  display: block;
-  text-align: center;
-}
-
-.botao-arquivo input {
-  display: none;
-}
-
-.botao-arquivo.desabilitado,
 .botao:disabled {
   opacity: .45;
   cursor: not-allowed;

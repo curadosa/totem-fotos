@@ -39,7 +39,7 @@
             :disabled="!arquivo || enviando"
             @click="enviar"
           >
-            {{ enviando ? `Enviando ${progresso}%` : 'Enviar para o totem' }}
+            {{ textoBotao }}
           </button>
         </template>
 
@@ -64,6 +64,12 @@
 import { computed, onUnmounted, ref } from 'vue'
 import { useRoute } from 'vue-router'
 import api from '../services/api'
+import {
+  aguardarCanalAberto,
+  aguardarColetaIce,
+  aguardarEspacoNoCanal,
+  criarConexaoFoto
+} from '../services/webRtcFoto'
 
 const TAMANHO_MAXIMO = 10 * 1024 * 1024
 const TIPOS_ACEITOS = ['image/jpeg', 'image/png']
@@ -78,11 +84,17 @@ const enviando = ref(false)
 const enviado = ref(false)
 const progresso = ref(0)
 const erro = ref(null)
+let conexao = null
+let canal = null
 
 const linkValido = computed(() => Boolean(sessaoId && token))
 const tamanhoFormatado = computed(() => {
   if (!arquivo.value) return ''
   return `${(arquivo.value.size / 1024 / 1024).toFixed(1).replace('.', ',')} MB`
+})
+const textoBotao = computed(() => {
+  if (!enviando.value) return 'Enviar para o totem'
+  return progresso.value >= 100 ? 'Confirmando no totem...' : `Enviando ${progresso.value}%`
 })
 
 function limparPreview() {
@@ -97,7 +109,7 @@ function selecionar(event) {
   limparPreview()
 
   if (!selecionado) return
-  if (selecionado.type && !TIPOS_ACEITOS.includes(selecionado.type)) {
+  if (!TIPOS_ACEITOS.includes(selecionado.type)) {
     erro.value = 'Escolha uma foto no formato JPEG ou PNG.'
     event.target.value = ''
     return
@@ -119,29 +131,138 @@ async function enviar() {
   progresso.value = 0
   erro.value = null
   try {
-    const form = new FormData()
-    form.append('token', token)
-    form.append('arquivo', arquivo.value)
-    await api.post(`/sessoes/${sessaoId}/foto/celular/upload`, form, {
-      onUploadProgress(event) {
-        if (event.total) progresso.value = Math.round((event.loaded * 100) / event.total)
-      }
-    })
+    if (!window.RTCPeerConnection) {
+      throw new Error('Este navegador não permite a conexão direta com o totem.')
+    }
+
+    await conectarAoTotem()
+    await transferirFoto(arquivo.value)
     progresso.value = 100
     enviado.value = true
+    arquivo.value = null
     limparPreview()
   } catch (e) {
     if (e.response?.status === 410 || e.response?.status === 403) {
       erro.value = 'Este link expirou. Volte ao totem e gere um novo QR Code.'
     } else {
-      erro.value = e.response?.data?.detail || 'Não foi possível enviar. Verifique a conexão e tente novamente.'
+      erro.value = e.response?.data?.detail || e.message || 'Não foi possível conectar ao totem.'
     }
+    encerrarConexao()
   } finally {
     enviando.value = false
   }
 }
 
-onUnmounted(limparPreview)
+async function conectarAoTotem() {
+  encerrarConexao()
+  const { data } = await api.get(`/sessoes/${sessaoId}/foto/celular/conexao`, {
+    params: { token }
+  })
+
+  conexao = criarConexaoFoto()
+  const canalRecebido = new Promise((resolve, reject) => {
+    const timeout = setTimeout(() => reject(new Error('O totem não abriu o canal de envio.')), 30000)
+    conexao.addEventListener('datachannel', event => {
+      clearTimeout(timeout)
+      resolve(event.channel)
+    }, { once: true })
+  })
+
+  await conexao.setRemoteDescription(data.oferta)
+  await conexao.setLocalDescription(await conexao.createAnswer())
+  await aguardarColetaIce(conexao)
+  await api.post(`/sessoes/${sessaoId}/foto/celular/conexao/responder`, {
+    token,
+    resposta: conexao.localDescription.toJSON()
+  })
+
+  canal = await canalRecebido
+  await aguardarCanalAberto(canal)
+}
+
+async function transferirFoto(foto) {
+  const TAMANHO_PARTE = 60 * 1024
+  const dados = await foto.arrayBuffer()
+  const bytes = new Uint8Array(dados)
+  let ultimoProgresso = -1
+
+  canal.send(JSON.stringify({
+    tipo: 'foto',
+    nome: foto.name || 'foto',
+    mime: foto.type,
+    tamanho: foto.size
+  }))
+
+  for (let inicio = 0; inicio < bytes.byteLength; inicio += TAMANHO_PARTE) {
+    await aguardarEspacoNoCanal(canal)
+    const fim = Math.min(inicio + TAMANHO_PARTE, bytes.byteLength)
+    canal.send(bytes.subarray(inicio, fim))
+    const percentual = Math.round((fim * 100) / bytes.byteLength)
+    if (percentual !== ultimoProgresso) {
+      progresso.value = percentual
+      ultimoProgresso = percentual
+    }
+  }
+
+  const confirmacao = aguardarConfirmacao()
+  canal.send(JSON.stringify({ tipo: 'fim' }))
+  await confirmacao
+  encerrarConexao()
+}
+
+function aguardarConfirmacao() {
+  return new Promise((resolve, reject) => {
+    let consultando = false
+    const timeout = setTimeout(() => finalizar(new Error('O totem não confirmou o recebimento.')), 20000)
+    const polling = setInterval(consultarEstado, 350)
+
+    function recebeu(event) {
+      if (typeof event.data !== 'string') return
+      try {
+        const mensagem = JSON.parse(event.data)
+        if (mensagem.tipo === 'recebida') finalizar()
+      } catch {
+        // Ignora mensagens que não pertencem ao protocolo de confirmação.
+      }
+    }
+
+    async function consultarEstado() {
+      if (consultando) return
+      consultando = true
+      try {
+        const { data } = await api.get(`/sessoes/${sessaoId}`)
+        if (data.estado === 'REVISANDO_FOTO') finalizar()
+      } catch {
+        // A confirmação direta pelo canal ainda pode chegar.
+      } finally {
+        consultando = false
+      }
+    }
+
+    function finalizar(erroConfirmacao) {
+      clearTimeout(timeout)
+      clearInterval(polling)
+      canal?.removeEventListener('message', recebeu)
+      erroConfirmacao ? reject(erroConfirmacao) : resolve()
+    }
+
+    canal.addEventListener('message', recebeu)
+    consultarEstado()
+  })
+}
+
+function encerrarConexao() {
+  canal?.close()
+  conexao?.close()
+  canal = null
+  conexao = null
+}
+
+onUnmounted(() => {
+  encerrarConexao()
+  limparPreview()
+  arquivo.value = null
+})
 </script>
 
 <style scoped>

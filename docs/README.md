@@ -24,7 +24,7 @@ Use os rótulos abaixo nos documentos:
 - [`06-architecture/`](06-architecture/architecture-overview.md): arquitetura atual e evolução.
 - [`07-domain/`](07-domain/domain-model.md): produtos, sessão e estados.
 - [`08-android/`](08-android/android.md): execução em Android e dispositivos móveis.
-- [`09-camera/`](09-camera/camera.md): captura local, câmera nativa e upload por QR Code.
+- [`09-camera/`](09-camera/camera.md): câmera do totem e transferência direta por QR Code.
 - [`10-payments/`](10-payments/payments.md): pagamentos e Pix.
 - [`11-printing/`](11-printing/printing.md): preparação e impressão dos formatos.
 - [`12-kiosk/`](12-kiosk/kiosk.md): operação em modo totem.

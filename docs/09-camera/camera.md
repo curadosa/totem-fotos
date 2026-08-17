@@ -2,39 +2,42 @@
 
 ## Objetivo
 
-Obter uma imagem adequada ao produto escolhido, com recuperação quando a câmera ao vivo não puder abrir.
+Obter uma imagem pela câmera conectada ao totem e mantê-la somente na memória do navegador durante a sessão.
 
 ## Modos Implementados
 
 ### Câmera ao vivo
 
 - Usa `navigator.mediaDevices.getUserMedia`.
-- Solicita vídeo frontal (`facingMode: user`) e nenhum áudio.
+- Solicita a webcam selecionada, sem áudio.
+- Detecta dispositivos `videoinput`, usa a webcam padrão e permite escolher outra quando houver mais de uma.
+- Solicita preferencialmente 1280×720 a 30 fps, com fallback para as capacidades da webcam.
 - Mostra o vídeo com `object-fit: cover` e moldura pontilhada.
 - Faz contagem de três segundos.
 - Copia o frame para canvas e gera JPEG com qualidade 0,92.
 
-### Captura nativa
+### Indisponibilidade da câmera
 
-- Fallback por `input type="file"` com `capture="user"`.
-- Adequado ao acesso móvel por HTTP, no qual `getUserMedia` pode ser bloqueado.
-- O comportamento exato entre abrir câmera e oferecer galeria depende do navegador.
+- `/capturar` não oferece seletor de arquivo nem abre a câmera de um celular.
+- Quando `getUserMedia` falha, orienta a verificar conexão e permissão e permite tentar novamente.
+- Diferencia permissão negada, webcam ausente, dispositivo ocupado e acesso fora de contexto seguro.
+- A captura gera JPEG local com qualidade 0,92 e não chama o backend.
 
-### Upload por QR Code
+### Transferência direta por QR Code
 
-- Backend emite token UUID válido por cinco minutos.
-- QR Code aponta para `/upload-celular` no IP local do frontend.
-- Totem consulta a sessão a cada dois segundos.
-- Ao receber a foto, baixa um blob para exibir nas revisões.
-- A página móvel mostra a prévia e o progresso antes de confirmar o envio.
-- O token é invalidado após o primeiro upload concluído.
-- O backend aceita JPEG e PNG de até 10 MB e valida formato, dimensões e limite de 40 megapixels.
+- O navegador do totem cria um canal de dados WebRTC e o backend emite um token UUID válido por cinco minutos.
+- O QR Code aponta para `/upload-celular` no endereço local do frontend.
+- O backend troca somente oferta e resposta SDP, mantidas em memória durante a negociação.
+- A foto JPEG ou PNG, limitada a 10 MB, segue diretamente do celular para o navegador do totem em blocos de 16 KiB.
+- A página móvel mostra prévia e progresso, e aguarda a confirmação do totem.
+- O token e a sinalização são invalidados após o recebimento.
+- Nenhum byte da foto é enviado ao backend ou gravado em disco.
 
 ## Requisitos de Rede
 
 - Celular e totem devem alcançar o mesmo endereço.
 - Frontend deve estar acessível na porta 5173.
-- Backend deve estar acessível na porta 8080 e escuta em `0.0.0.0`.
+- Backend deve estar acessível na porta 8080 para a sinalização WebRTC e escuta em `0.0.0.0`.
 - Firewall do sistema operacional deve liberar somente a rede necessária.
 - Produção deve preferir HTTPS e configuração explícita de origem.
 

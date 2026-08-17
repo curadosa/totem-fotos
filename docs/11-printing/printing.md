@@ -2,7 +2,7 @@
 
 ## Estado Atual
 
-Não existe geração de arquivo final nem comunicação com impressora. `/imprimindo` mostra uma mensagem por seis segundos. O backend é finalizado e a foto é removida antes dessa tela, portanto o comportamento atual é somente uma simulação visual.
+Não existe geração de arquivo final nem comunicação com impressora. `/imprimindo` mostra uma mensagem por seis segundos. A foto permanece apenas no navegador do totem e sua referência local é revogada ao encerrar a tela, portanto o comportamento atual é somente uma simulação visual.
 
 ## Produtos e Composição Alvo
 
