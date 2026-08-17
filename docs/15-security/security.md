@@ -35,7 +35,7 @@
 - Não há tarefa para limpar fotos órfãs.
 - Diretórios vazios permanecem.
 - O token continua armazenado após uso.
-- A foto é sempre salva como `foto.jpg`, mesmo que o conteúdo original seja outro formato.
+- JPEG e PNG são identificados pelo conteúdo e armazenados com a extensão correspondente; HEIC ainda não é aceito.
 - O profile `cloud` não define uma política de segredos.
 
 ## Controles Necessários

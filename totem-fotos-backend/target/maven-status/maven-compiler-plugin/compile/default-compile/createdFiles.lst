@@ -1,2 +1,4 @@
+com\totem\fotos\service\ArmazenamentoService$FotoValidada.class
 com\totem\fotos\web\SessaoController$CriarSessaoRequest.class
 com\totem\fotos\domain\ProdutoFoto.class
+com\totem\fotos\service\ArmazenamentoService$FotoInvalidaException.class

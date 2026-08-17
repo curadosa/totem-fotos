@@ -1,5 +1,7 @@
 package com.totem.fotos.domain;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
+
 import java.nio.file.Path;
 import java.time.Instant;
 import java.util.UUID;
@@ -31,16 +33,23 @@ public class Sessao {
     public ProdutoFoto getProduto() { return produto; }
     public SessaoEstado getEstado() { return estado; }
     public void setEstado(SessaoEstado estado) { this.estado = estado; }
+    @JsonIgnore
     public Path getCaminhoFoto() { return caminhoFoto; }
     public void setCaminhoFoto(Path caminhoFoto) { this.caminhoFoto = caminhoFoto; }
+    @JsonIgnore
     public String getTokenUploadCelular() { return tokenUploadCelular; }
     public void setTokenUploadCelular(String token, Instant expiraEm) {
         this.tokenUploadCelular = token;
         this.tokenExpiraEm = expiraEm;
     }
+    public void invalidarTokenUploadCelular() {
+        this.tokenUploadCelular = null;
+        this.tokenExpiraEm = null;
+    }
     public boolean tokenExpirado() {
         return tokenExpiraEm == null || Instant.now().isAfter(tokenExpiraEm);
     }
+    @JsonIgnore
     public String getPixTxId() { return pixTxId; }
     public void setPixTxId(String pixTxId) { this.pixTxId = pixTxId; }
 }

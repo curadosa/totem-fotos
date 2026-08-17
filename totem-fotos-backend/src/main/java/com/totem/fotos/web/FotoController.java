@@ -8,8 +8,11 @@ import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 import org.springframework.core.io.FileSystemResource;
 import org.springframework.core.io.Resource;
+import org.springframework.http.CacheControl;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
+import org.springframework.http.HttpStatus;
+import org.springframework.web.server.ResponseStatusException;
 
 import java.io.IOException;
 import java.time.Instant;
@@ -32,7 +35,7 @@ public class FotoController {
     @PostMapping
     public Sessao capturar(@PathVariable String sessaoId, @RequestParam("arquivo") MultipartFile arquivo) throws IOException {
         Sessao sessao = sessaoService.buscar(sessaoId);
-        var caminho = armazenamentoService.salvarFoto(sessaoId, arquivo);
+        var caminho = salvarFoto(sessaoId, arquivo);
         sessao.setCaminhoFoto(caminho);
         sessaoService.transicionar(sessaoId, SessaoEstado.REVISANDO_FOTO);
         return sessao;
@@ -46,8 +49,12 @@ public class FotoController {
             return ResponseEntity.notFound().build();
         }
         Resource foto = new FileSystemResource(sessao.getCaminhoFoto());
+        MediaType tipo = sessao.getCaminhoFoto().toString().endsWith(".png")
+                ? MediaType.IMAGE_PNG
+                : MediaType.IMAGE_JPEG;
         return ResponseEntity.ok()
-                .contentType(MediaType.IMAGE_JPEG)
+                .cacheControl(CacheControl.noStore())
+                .contentType(tipo)
                 .body(foto);
     }
 
@@ -67,13 +74,31 @@ public class FotoController {
                                    @RequestParam("token") String token,
                                    @RequestParam("arquivo") MultipartFile arquivo) throws IOException {
         Sessao sessao = sessaoService.buscar(sessaoId);
-        if (sessao.tokenExpirado() || !token.equals(sessao.getTokenUploadCelular())) {
-            throw new IllegalStateException("Token de upload invalido ou expirado.");
+        synchronized (sessao) {
+            if (sessao.tokenExpirado()) {
+                throw new ResponseStatusException(HttpStatus.GONE, "O link de envio expirou.");
+            }
+            if (token == null || !token.equals(sessao.getTokenUploadCelular())) {
+                throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Link de envio inválido.");
+            }
+            if (sessao.getEstado() != SessaoEstado.AGUARDANDO_UPLOAD_CELULAR) {
+                throw new ResponseStatusException(HttpStatus.CONFLICT, "Esta sessão não está aguardando uma foto.");
+            }
+
+            var caminho = salvarFoto(sessaoId, arquivo);
+            sessao.setCaminhoFoto(caminho);
+            sessao.invalidarTokenUploadCelular();
+            sessaoService.transicionar(sessaoId, SessaoEstado.REVISANDO_FOTO);
         }
-        var caminho = armazenamentoService.salvarFoto(sessaoId, arquivo);
-        sessao.setCaminhoFoto(caminho);
-        sessaoService.transicionar(sessaoId, SessaoEstado.REVISANDO_FOTO);
         return sessao;
+    }
+
+    private java.nio.file.Path salvarFoto(String sessaoId, MultipartFile arquivo) throws IOException {
+        try {
+            return armazenamentoService.salvarFoto(sessaoId, arquivo);
+        } catch (ArmazenamentoService.FotoInvalidaException e) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, e.getMessage(), e);
+        }
     }
 
     /** Botao "Refazer" na tela de revisao - descarta a foto atual e volta pra captura. */

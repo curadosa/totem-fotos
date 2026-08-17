@@ -56,7 +56,7 @@ stateDiagram-v2
 
 ## Foto
 
-Não é uma entidade persistida. É um arquivo `foto.jpg` referenciado pela sessão e armazenado sob data e UUID. O nome fixo não preserva o MIME original do upload.
+Não é uma entidade persistida. É um arquivo `foto.jpg` ou `foto.png`, conforme o conteúdo validado, referenciado pela sessão e armazenado sob data e UUID.
 
 ## Conceitos Necessários para Produção
 

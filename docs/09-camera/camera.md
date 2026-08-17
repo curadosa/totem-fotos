@@ -26,6 +26,9 @@ Obter uma imagem adequada ao produto escolhido, com recuperação quando a câme
 - QR Code aponta para `/upload-celular` no IP local do frontend.
 - Totem consulta a sessão a cada dois segundos.
 - Ao receber a foto, baixa um blob para exibir nas revisões.
+- A página móvel mostra a prévia e o progresso antes de confirmar o envio.
+- O token é invalidado após o primeiro upload concluído.
+- O backend aceita JPEG e PNG de até 10 MB e valida formato, dimensões e limite de 40 megapixels.
 
 ## Requisitos de Rede
 
@@ -47,12 +50,9 @@ A prévia usa `object-fit: cover`, portanto corta a imagem conforme a área. Ain
 
 ## Validação de Upload Pendente
 
-- Tamanho máximo.
-- MIME declarado e conteúdo real.
-- Dimensões e quantidade de pixels.
-- Decodificação segura.
-- Normalização de orientação e espaço de cor.
-- Rejeição de arquivo corrompido ou não-imagem.
+- Normalização de orientação EXIF e espaço de cor.
+- Suporte explícito a HEIC quando exigido pelos dispositivos homologados.
+- Validação de resolução mínima específica de cada produto.
 
 ## Métricas Futuras
 

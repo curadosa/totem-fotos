@@ -35,7 +35,7 @@ flowchart LR
 - `FotoController`: recebe, entrega e remove foto; emite e valida token de upload.
 - `PagamentoController`: cria cobrança e consulta status.
 - `SessaoService`: mantém `ConcurrentHashMap` de sessões.
-- `ArmazenamentoService`: salva em `data/sessoes/{data}/{sessaoId}/foto.jpg`.
+- `ArmazenamentoService`: valida JPEG/PNG e salva em `data/sessoes/{data}/{sessaoId}/foto.{jpg|png}`.
 - `PixService`: contrato de integração.
 
 ## Contratos REST Atuais

@@ -13,7 +13,7 @@ cd totem-fotos-backend
 mvn spring-boot:run
 ```
 
-Sobe em `http://localhost:8080` com o profile `local` ativo. As sessões ficam em memória e as fotos são salvas em `./data/sessoes/{data}/{sessaoId}/foto.jpg`.
+Sobe em `http://localhost:8080` com o profile `local` ativo. As sessões ficam em memória e as fotos são salvas temporariamente em `./data/sessoes/{data}/{sessaoId}/foto.jpg` ou `foto.png`.
 
 `PixServiceStub` simula o pagamento como aprovado automaticamente. Ele não gera uma cobrança pagável.
 
@@ -27,7 +27,7 @@ npm install
 npm run dev
 ```
 
-Sobe em `http://localhost:5173`. Ao acessar por outro aparelho na rede, o frontend usa automaticamente o mesmo IP na porta 8080 para encontrar o backend. É possível sobrescrever esse endereço com `VITE_API_URL`.
+Sobe em `http://localhost:5173`. Ao acessar por outro aparelho na rede, o frontend usa automaticamente o mesmo IP na porta 8080 para encontrar o backend. É possível sobrescrever esse endereço com `VITE_API_URL`. Se o totem for aberto por `localhost`, defina `VITE_PUBLIC_URL=http://IP-DO-TOTEM:5173` para o QR Code usar um endereço acessível pelo celular.
 
 Em navegadores móveis, a câmera ao vivo (`getUserMedia`) exige HTTPS quando o acesso não é por `localhost`. Nesse caso, a tela oferece “Abrir câmera do celular”, usando a captura nativa do aparelho.
 
@@ -50,6 +50,6 @@ Para acesso pela rede, as portas 5173 e 8080 precisam estar liberadas para a red
 - Implementar `PixService` real, idempotência, expiração e conciliação.
 - Gerar os arquivos finais dos três formatos com medidas e DPI homologados.
 - Integrar impressora física e fila persistente.
-- Implementar HTTPS, CORS restrito e validação de uploads.
+- Implementar HTTPS, CORS restrito, orientação EXIF e suporte a HEIC quando necessário.
 - Criar timeout, limpeza periódica, logs, health checks e modo kiosk.
 - Adicionar testes automatizados e testes físicos de impressão.
