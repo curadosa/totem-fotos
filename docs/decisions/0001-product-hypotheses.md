@@ -14,7 +14,7 @@ Validar primeiro um único totem web e local, com fluxo sem cadastro e três pro
 
 - Polaroid por R$ 4,50.
 - Normal 10×15 por R$ 5,50.
-- Conjunto com 6 fotos 3×4 por R$ 19,90.
+- Conjunto com 8 fotos 3×4 por R$ 19,90.
 
 O usuário pode capturar ou enviar a imagem e deve fazer duas confirmações antes de pagar: qualidade da foto e formato de impressão.
 

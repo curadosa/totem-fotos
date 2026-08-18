@@ -6,7 +6,7 @@ Pessoa que precisa rapidamente de fotos para documento, cadastro ou uso administ
 
 ### Objetivos
 
-- Produzir seis cópias em tamanho reconhecível.
+- Produzir oito cópias em tamanho reconhecível.
 - Conferir enquadramento e corte.
 - Receber a impressão sem aprender uma ferramenta de edição.
 
@@ -19,7 +19,7 @@ Pessoa que precisa rapidamente de fotos para documento, cadastro ou uso administ
 ### Necessidades de UX
 
 - Orientação de posicionamento.
-- Grade com as seis cópias antes do pagamento.
+- Grade com as oito cópias antes do pagamento.
 - Botão Refazer presente nas duas revisões.
 
 ## Usuário de Lembrança

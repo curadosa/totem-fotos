@@ -8,7 +8,7 @@ Catálogo fechado no código atual.
 |---|---|---:|
 | `POLAROID` | Polaroid | R$ 4,50 |
 | `NORMAL_10X15` | Normal (10×15) | R$ 5,50 |
-| `SEIS_FOTOS_3X4` | 6 fotos 3×4 | R$ 19,90 |
+| `OITO_FOTOS_3X4` | 8 fotos 3×4 | R$ 19,90 |
 
 O preço é `BigDecimal` no backend. O frontend replica rótulos e valores para exibição.
 

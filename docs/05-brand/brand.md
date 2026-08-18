@@ -26,7 +26,7 @@ Praticidade, transparência e confiança para imprimir uma foto sem complicaçã
 
 - “Polaroid” para uma foto com moldura.
 - “Normal 10×15” para uma foto no formato 10×15 cm.
-- “6 fotos 3×4” ou “Conjunto com 6 fotos 3×4”.
+- “8 fotos 3×4” ou “Conjunto com 8 fotos 3×4”.
 - “Refazer” para descartar e capturar novamente.
 - “Confirmar” para aprovar a etapa atual.
 

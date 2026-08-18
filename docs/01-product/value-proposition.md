@@ -6,7 +6,7 @@ Imprimir uma foto em poucos passos, sem cadastro e com controle sobre o resultad
 
 ### Ganhos
 
-- Escolha clara entre Polaroid, 10×15 e seis fotos 3×4.
+- Escolha clara entre Polaroid, 10×15 e oito fotos 3×4.
 - Preço conhecido desde o início.
 - Captura no próprio equipamento ou uso do celular.
 - Confirmação da foto original e do recorte final.

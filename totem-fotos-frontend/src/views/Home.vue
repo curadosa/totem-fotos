@@ -46,7 +46,7 @@ const router = useRouter()
 const produtos = [
   { id: 'POLAROID', nome: 'Polaroid', detalhe: '1 foto', valor: 4.50 },
   { id: 'NORMAL_10X15', nome: 'Normal 10x15', detalhe: '1 foto', valor: 5.50 },
-  { id: 'SEIS_FOTOS_3X4', nome: 'Fotos 3x4', detalhe: 'Conjunto com 6 fotos', valor: 19.90 }
+  { id: 'OITO_FOTOS_3X4', nome: 'Fotos 3x4', detalhe: 'Conjunto com 8 fotos', valor: 19.90 }
 ]
 
 const formatarValor = (valor) => valor.toLocaleString('pt-BR', {

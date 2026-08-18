@@ -18,10 +18,10 @@ Não existe geração de arquivo final nem comunicação com impressora. `/impri
 - Definir orientação, política de corte e sangria.
 - Saída física de 10×15 cm.
 
-### Seis fotos 3×4
+### Oito fotos 3×4
 
-- Seis imagens com proporção 3:4.
-- Grade de três colunas por duas linhas na prévia atual.
+- Oito imagens com proporção 3:4.
+- Grade de quatro colunas por duas linhas na prévia atual.
 - Cada foto deve medir 3×4 cm no papel, com espaçamento e margens calibrados.
 
 ## Regra de Fidelidade

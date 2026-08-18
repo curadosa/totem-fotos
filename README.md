@@ -36,7 +36,7 @@ Para acesso pela rede, as portas 5173 e 8080 precisam estar liberadas para a red
 ## Fluxo implementado
 
 1. Boas-vindas e consentimento.
-2. Escolha entre Polaroid (R$ 4,50), Normal 10×15 (R$ 5,50) e conjunto com 6 fotos 3×4 (R$ 19,90).
+2. Escolha entre Polaroid (R$ 4,50), Normal 10×15 (R$ 5,50) e conjunto com 8 fotos 3×4 (R$ 19,90).
 3. Escolha entre tirar foto e enviar do celular.
 4. Captura local ou transferência direta do celular para o navegador do totem por WebRTC, iniciada por QR Code.
 5. Primeira revisão da foto original.

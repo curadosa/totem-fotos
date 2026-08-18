@@ -9,7 +9,7 @@
       <div
         v-if="sessao.produto"
         class="papel-10x15"
-        :class="{ 'papel-10x15--paisagem': sessao.produto.id === 'SEIS_FOTOS_3X4' }"
+        :class="{ 'papel-10x15--paisagem': sessao.produto.id === 'OITO_FOTOS_3X4' }"
       >
         <div v-if="sessao.produto.id === 'POLAROID'" class="polaroid">
           <img
@@ -27,9 +27,9 @@
           alt="Prévia da foto no formato 10 por 15"
         >
 
-        <div v-else-if="sessao.produto.id === 'SEIS_FOTOS_3X4'" class="grade-3x4">
+        <div v-else-if="sessao.produto.id === 'OITO_FOTOS_3X4'" class="grade-3x4">
           <img
-            v-for="numero in 6"
+            v-for="numero in 8"
             :key="`${sessao.fotoPreviewUrl}-${numero}`"
             :src="sessao.fotoPreviewUrl"
             :alt="`Prévia da foto 3x4 número ${numero}`"
@@ -164,7 +164,7 @@ header p {
   width: 100%;
   height: 100%;
   display: grid;
-  grid-template-columns: repeat(3, 20%);
+  grid-template-columns: repeat(4, 20%);
   grid-template-rows: repeat(2, 40%);
   align-content: center;
   justify-content: center;

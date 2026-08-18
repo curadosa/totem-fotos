@@ -4,7 +4,7 @@
 
 ### Sessão e catálogo
 
-- RF-001 — O sistema deve exibir Polaroid, Normal 10×15 e conjunto com 6 fotos 3×4.
+- RF-001 — O sistema deve exibir Polaroid, Normal 10×15 e conjunto com 8 fotos 3×4.
 - RF-002 — O sistema deve exibir respectivamente R$ 4,50, R$ 5,50 e R$ 19,90.
 - RF-003 — O backend deve associar produto e preço à sessão.
 - RF-004 — O usuário deve escolher entre captura e envio pelo celular.
@@ -17,7 +17,7 @@
 - RF-013 — O usuário deve revisar e poder refazer a foto original.
 - RF-014 — O usuário deve revisar e poder refazer o formato de impressão.
 - RF-015 — Refazer deve revogar a foto local atual e retornar a `/capturar`.
-- RF-016 — A prévia 3×4 deve mostrar seis cópias em grade 3×2.
+- RF-016 — A prévia 3×4 deve mostrar oito cópias em grade 4×2.
 
 ### Pagamento e impressão
 

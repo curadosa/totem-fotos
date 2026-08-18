@@ -41,7 +41,7 @@ Cada pedido corresponde a uma sessão, um produto, um pagamento e uma tentativa 
 
 - Polaroid: R$ 4,50.
 - Normal 10×15: R$ 5,50.
-- Conjunto com 6 fotos 3×4: R$ 19,90.
+- Conjunto com 8 fotos 3×4: R$ 19,90.
 
 Esses valores estão codificados no backend e não são configuráveis por painel.
 

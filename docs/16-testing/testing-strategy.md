@@ -64,7 +64,7 @@ O frontend possui apenas scripts de desenvolvimento e build. O backend compila, 
 - Régua para dimensões 10×15 e 3×4.
 - Carta de cor e resolução.
 - Corte nas bordas e sangria.
-- Seis cópias na disposição esperada.
+- Oito cópias na disposição esperada.
 - Falta de papel, tampa aberta, offline e atolamento.
 
 ## Evidência de Release
