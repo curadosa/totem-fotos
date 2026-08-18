@@ -1,0 +1,6 @@
+node_modules/
+dist/
+build/
+.vite/
+totem-fotos-backend/target/totem-fotos-backend-0.1.0.jar
+totem-fotos-backend/target/totem-fotos-backend-0.1.0.jar.original
