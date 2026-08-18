@@ -1,0 +1,39 @@
+<!doctype html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Enviar foto ao totem</title>
+    <link rel="stylesheet" href="/style.css">
+  </head>
+  <body>
+    <main class="pagina">
+      <section class="cartao">
+        <div id="conteudo">
+          <p class="etiqueta">Totem Fotos</p>
+          <h1>Envie sua foto</h1>
+          <p class="descricao">Escolha uma imagem do seu celular. Ela será enviada diretamente ao totem.</p>
+
+          <label id="seletor" class="seletor">
+            <input id="arquivo" type="file" accept="image/jpeg,image/png">
+            <span id="convite"><strong>Escolher foto</strong><small>JPEG ou PNG, até 10 MB</small></span>
+            <img id="preview" alt="Prévia da foto" hidden>
+          </label>
+
+          <p id="nome" class="nome"></p>
+          <div id="progresso" class="progresso" hidden><div id="barra"></div></div>
+          <p id="mensagem" class="mensagem">Conectando ao totem...</p>
+          <button id="enviar" type="button" disabled>Enviar foto</button>
+          <p class="privacidade">A foto não é armazenada neste celular nem no servidor do totem.</p>
+        </div>
+
+        <div id="sucesso" class="sucesso" hidden>
+          <span>✓</span>
+          <h2>Foto enviada</h2>
+          <p>Você já pode voltar ao totem.</p>
+        </div>
+      </section>
+    </main>
+    <script src="/app.js"></script>
+  </body>
+</html>
