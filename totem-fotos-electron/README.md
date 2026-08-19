@@ -2,8 +2,8 @@
 
 Alternativa desktop independente do frontend web e do backend Spring. O aplicativo possui:
 
-- renderer Vue em `http://localhost:5173`;
-- servidor HTTP móvel e sinalização WebSocket em `http://0.0.0.0:9000`;
+- renderer Vue em `http://localhost:9000`;
+- servidor HTTP móvel e sinalização WebSocket em `http://0.0.0.0:5173`;
 - estado, catálogo e pagamento simulado locais;
 - transferência da foto diretamente do celular ao renderer por DataChannel WebRTC.
 
@@ -19,11 +19,11 @@ npm run dev
 Quando houver mais de uma interface de rede, defina o IP que o celular alcança:
 
 ```powershell
-$env:VITE_MOBILE_URL = 'http://192.168.0.10:9000'
+$env:VITE_MOBILE_URL = 'http://192.168.0.10:5173'
 npm run dev
 ```
 
-Não é necessário iniciar `totem-fotos-backend` ou `totem-fotos-frontend`. O firewall do totem deve permitir TCP de entrada na porta 9000 para a rede local.
+Não é necessário iniciar `totem-fotos-backend` ou `totem-fotos-frontend`. O firewall do totem deve permitir TCP de entrada na porta 5173 para a rede local. A porta 9000 permanece restrita ao renderer local.
 
 ## Validar
 
@@ -32,4 +32,4 @@ npm run build
 npm run test:signal
 ```
 
-O segundo comando espera que o servidor Electron da porta 9000 já esteja em execução.
+O segundo comando espera que o servidor Electron da porta 5173 já esteja em execução.

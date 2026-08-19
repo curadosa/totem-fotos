@@ -1,5 +1,6 @@
 const TAMANHO_MAXIMO = 10 * 1024 * 1024
 const TIPOS_ACEITOS = ['image/jpeg', 'image/png']
+const TEMPO_LIMITE_ICE = 10000
 const sessaoId = new URLSearchParams(location.search).get('session')
 
 const input = document.querySelector('#arquivo')
@@ -19,10 +20,10 @@ let previewUrl
 let socket
 let conexao
 let canal
-let candidatosPendentes = []
 let resolverCanal
 let rejeitarCanal
 let canalPronto = novaEsperaCanal()
+let temporizadorConexao
 
 function novaEsperaCanal() {
   return new Promise((resolve, reject) => {
@@ -40,25 +41,48 @@ function enviarSinal(dados) {
   if (socket?.readyState === WebSocket.OPEN) socket.send(JSON.stringify(dados))
 }
 
+function aguardarColetaIce(peer) {
+  if (peer.iceGatheringState === 'complete') return Promise.resolve()
+
+  return new Promise((resolve, reject) => {
+    const timeout = setTimeout(() => finalizar(new Error('Tempo excedido ao preparar a conexão direta.')), TEMPO_LIMITE_ICE)
+
+    function aoMudarEstado() {
+      if (peer.iceGatheringState === 'complete') finalizar()
+    }
+
+    function finalizar(erro) {
+      clearTimeout(timeout)
+      peer.removeEventListener('icegatheringstatechange', aoMudarEstado)
+      erro ? reject(erro) : resolve()
+    }
+
+    peer.addEventListener('icegatheringstatechange', aoMudarEstado)
+  })
+}
+
 function criarConexao() {
   conexao?.close()
   canal?.close()
   canal = null
-  candidatosPendentes = []
   canalPronto = novaEsperaCanal()
   conexao = new RTCPeerConnection({ iceServers: [] })
-  conexao.addEventListener('icecandidate', event => {
-    if (event.candidate) enviarSinal({ type: 'candidate', candidate: event.candidate })
-  })
   conexao.addEventListener('datachannel', event => {
     canal = event.channel
     canal.binaryType = 'arraybuffer'
     canal.addEventListener('open', () => {
+      clearTimeout(temporizadorConexao)
       mostrarMensagem('Conectado ao totem.')
       botao.disabled = !arquivo
       resolverCanal(canal)
     }, { once: true })
     canal.addEventListener('close', () => rejeitarCanal(new Error('A conexão com o totem foi encerrada.')), { once: true })
+  })
+  conexao.addEventListener('connectionstatechange', () => {
+    if (conexao.connectionState === 'failed') {
+      clearTimeout(temporizadorConexao)
+      mostrarMensagem('Não foi possível criar a conexão direta. Verifique se celular e totem estão na mesma rede.', true)
+    }
   })
 }
 
@@ -72,13 +96,16 @@ async function receberSinal(event) {
     criarConexao()
     await conexao.setRemoteDescription(dados.description)
     await conexao.setLocalDescription(await conexao.createAnswer())
+    mostrarMensagem('Preparando resposta direta...')
+    await aguardarColetaIce(conexao)
     enviarSinal({ type: 'answer', description: conexao.localDescription })
-    for (const candidato of candidatosPendentes.splice(0)) await conexao.addIceCandidate(candidato)
+    clearTimeout(temporizadorConexao)
+    temporizadorConexao = setTimeout(() => {
+      if (canal?.readyState !== 'open') {
+        mostrarMensagem('A sinalização funcionou, mas não existe rota WebRTC direta entre as redes.', true)
+      }
+    }, 15000)
     return
-  }
-  if (dados.type === 'candidate' && dados.candidate) {
-    if (conexao?.remoteDescription) await conexao.addIceCandidate(dados.candidate)
-    else candidatosPendentes.push(dados.candidate)
   }
 }
 
@@ -175,6 +202,7 @@ botao.addEventListener('click', async () => {
 })
 
 window.addEventListener('beforeunload', () => {
+  clearTimeout(temporizadorConexao)
   if (previewUrl) URL.revokeObjectURL(previewUrl)
   canal?.close()
   conexao?.close()

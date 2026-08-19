@@ -4,7 +4,7 @@ const sessao = `teste-${Date.now()}`
 
 function abrir(papel) {
   return new Promise((resolve, reject) => {
-    const socket = new WebSocket(`ws://127.0.0.1:9000/signal?role=${papel}&session=${sessao}`)
+    const socket = new WebSocket(`ws://127.0.0.1:5173/signal?role=${papel}&session=${sessao}`)
     const primeira = new Promise((resolveMensagem, rejectMensagem) => {
       socket.once('message', dados => resolveMensagem(JSON.parse(dados.toString())))
       socket.once('error', rejectMensagem)

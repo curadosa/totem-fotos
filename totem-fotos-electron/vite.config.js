@@ -11,7 +11,7 @@ function encontrarIpv4Local() {
 export default defineConfig(({ mode }) => {
   const env = loadEnv(mode, process.cwd(), '')
   const hostPublico = encontrarIpv4Local() || 'localhost'
-  const urlMobile = env.VITE_MOBILE_URL || `http://${hostPublico}:9000`
+  const urlMobile = env.VITE_MOBILE_URL || `http://${hostPublico}:5173`
 
   return {
     plugins: [vue()],
@@ -23,7 +23,7 @@ export default defineConfig(({ mode }) => {
     },
     server: {
       host: '127.0.0.1',
-      port: 5173,
+      port: 9000,
       strictPort: true
     },
     build: {

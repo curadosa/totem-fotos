@@ -93,6 +93,7 @@ import QRCode from 'qrcode'
 
 const TAMANHO_MAXIMO = 10 * 1024 * 1024
 const TIPOS_ACEITOS = ['image/jpeg', 'image/png']
+const TEMPO_LIMITE_ICE = 10000
 const produtos = [
   { id: 'POLAROID', nome: 'Polaroid', detalhe: '1 foto', valor: 4.5 },
   { id: 'NORMAL_10X15', nome: 'Normal 10x15', detalhe: '1 foto', valor: 5.5 },
@@ -122,7 +123,6 @@ let relogio
 let temporizadorPagamento
 let temporizadorImpressao
 let ofertaEmAndamento = false
-let candidatosPendentes = []
 let metadados
 let partes = []
 let bytesRecebidos = 0
@@ -185,12 +185,12 @@ async function abrirQr() {
   segundosQr.value = 300
   const sessaoId = crypto.randomUUID()
   await nextTick()
-  const origemMobile = import.meta.env.VITE_MOBILE_URL || 'http://localhost:9000'
+  const origemMobile = import.meta.env.VITE_MOBILE_URL || 'http://127.0.0.1:5173'
   const url = new URL('/upload-celular', origemMobile)
   url.searchParams.set('session', sessaoId)
   await QRCode.toCanvas(qrCanvas.value, url.toString(), { width: 240, margin: 1 })
 
-  socket = new WebSocket(`ws://localhost:9000/signal?role=totem&session=${encodeURIComponent(sessaoId)}`)
+  socket = new WebSocket(`ws://127.0.0.1:5173/signal?role=totem&session=${encodeURIComponent(sessaoId)}`)
   socket.addEventListener('message', event => receberSinal(event).catch(falharQr))
   socket.addEventListener('error', () => falharQr(new Error('O servidor móvel não está disponível.')))
   relogio = setInterval(() => {
@@ -203,23 +203,41 @@ function enviarSinal(dados) {
   if (socket?.readyState === WebSocket.OPEN) socket.send(JSON.stringify(dados))
 }
 
+function aguardarColetaIce(peer) {
+  if (peer.iceGatheringState === 'complete') return Promise.resolve()
+
+  return new Promise((resolve, reject) => {
+    const timeout = setTimeout(() => finalizar(new Error('Tempo excedido ao preparar a conexão direta.')), TEMPO_LIMITE_ICE)
+
+    function aoMudarEstado() {
+      if (peer.iceGatheringState === 'complete') finalizar()
+    }
+
+    function finalizar(erro) {
+      clearTimeout(timeout)
+      peer.removeEventListener('icegatheringstatechange', aoMudarEstado)
+      erro ? reject(erro) : resolve()
+    }
+
+    peer.addEventListener('icegatheringstatechange', aoMudarEstado)
+  })
+}
+
 async function prepararOferta() {
   if (ofertaEmAndamento) return
   ofertaEmAndamento = true
   conexao?.close()
   canal?.close()
-  candidatosPendentes = []
   conexao = new RTCPeerConnection({ iceServers: [] })
   canal = conexao.createDataChannel('foto', { ordered: true })
   prepararCanal(canal)
-  conexao.addEventListener('icecandidate', event => {
-    if (event.candidate) enviarSinal({ type: 'candidate', candidate: event.candidate })
-  })
   conexao.addEventListener('connectionstatechange', () => {
     if (conexao.connectionState === 'connected') statusQr.value = 'Celular conectado. Aguardando a foto...'
     if (['failed', 'disconnected'].includes(conexao.connectionState)) statusQr.value = 'Reconectando ao celular...'
   })
   await conexao.setLocalDescription(await conexao.createOffer())
+  statusQr.value = 'Preparando conexão direta...'
+  await aguardarColetaIce(conexao)
   enviarSinal({ type: 'offer', description: conexao.localDescription })
   ofertaEmAndamento = false
 }
@@ -233,12 +251,7 @@ async function receberSinal(event) {
   }
   if (dados.type === 'answer') {
     await conexao.setRemoteDescription(dados.description)
-    for (const candidato of candidatosPendentes.splice(0)) await conexao.addIceCandidate(candidato)
-    return
-  }
-  if (dados.type === 'candidate' && dados.candidate) {
-    if (conexao?.remoteDescription) await conexao.addIceCandidate(dados.candidate)
-    else candidatosPendentes.push(dados.candidate)
+    statusQr.value = 'Resposta recebida. Abrindo canal direto...'
   }
 }
 

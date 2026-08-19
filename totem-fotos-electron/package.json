@@ -7,7 +7,7 @@
   "scripts": {
     "dev": "concurrently --kill-others-on-fail --names renderer,electron \"npm:dev:renderer\" \"npm:dev:electron\"",
     "dev:renderer": "vite",
-    "dev:electron": "wait-on http-get://localhost:5173 && electron .",
+    "dev:electron": "wait-on http-get://127.0.0.1:9000 && electron .",
     "build": "vite build",
     "test:signal": "node scripts/test-signal.mjs",
     "start": "electron ."

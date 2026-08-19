@@ -5,14 +5,15 @@ import { extname, join } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { WebSocket, WebSocketServer } from 'ws'
 
-const RENDERER_URL = process.env.ELECTRON_RENDERER_URL || 'http://localhost:5173'
+const RENDERER_URL = process.env.ELECTRON_RENDERER_URL || 'http://127.0.0.1:9000'
 const RENDERER_ORIGIN = new URL(RENDERER_URL).origin
-const PORTA_MOBILE = Number(process.env.ELECTRON_MOBILE_PORT || 9000)
+const PORTA_MOBILE = Number(process.env.ELECTRON_MOBILE_PORT || 5173)
 const diretorioMobile = fileURLToPath(new URL('../mobile', import.meta.url))
 const pares = new Map()
 let servidorMobile
 
 app.commandLine.appendSwitch('disable-features', 'WebRtcHideLocalIpsWithMdns')
+app.commandLine.appendSwitch('force-webrtc-ip-handling-policy', 'default_public_and_private_interfaces')
 
 function responderArquivo(resposta, arquivo) {
   const tipos = {
