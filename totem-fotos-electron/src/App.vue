@@ -64,7 +64,21 @@
     <section v-else-if="tela === 'revisar-impressao'" class="tela">
       <header><h1>Assim será impresso</h1><p>{{ produto.nome }}</p></header>
       <div class="papel" :class="produto.id.toLowerCase()">
-        <img v-for="indice in produto.id === 'OITO_FOTOS_3X4' ? 8 : 1" :key="indice" :src="fotoUrl" alt="Prévia de impressão">
+        <div v-for="indice in produto.id === 'OITO_FOTOS_3X4' ? 8 : 1" :key="indice" class="copia-foto">
+          <img :src="fotoUrl" :style="estiloEdicao" :class="{ 'foto-contida': origemFoto === 'celular' }" alt="Prévia de impressão">
+        </div>
+      </div>
+      <div class="editor-foto">
+        <label class="controle-tamanho">
+          <span>Tamanho</span>
+          <input v-model.number="escalaFoto" type="range" min="0.75" max="2" step="0.05">
+          <output>{{ Math.round(escalaFoto * 100) }}%</output>
+        </label>
+        <div class="controles-giro">
+          <button type="button" @click="girarFoto(-90)">↶ Girar</button>
+          <button type="button" @click="restaurarEdicao">Restaurar</button>
+          <button type="button" @click="girarFoto(90)">Girar ↷</button>
+        </div>
       </div>
       <div class="acoes linha rodape">
         <button class="botao secundario" @click="refazer">Refazer</button>
@@ -108,6 +122,7 @@ const consentiu = ref(false)
 const produto = ref(null)
 const foto = ref(null)
 const fotoUrl = ref(null)
+const origemFoto = ref(null)
 const video = ref(null)
 const cameraAtiva = ref(false)
 const erroCamera = ref(null)
@@ -118,6 +133,8 @@ const erroQr = ref(null)
 const statusQr = ref('Aguardando o celular...')
 const segundosQr = ref(300)
 const pagamentoConfirmado = ref(false)
+const escalaFoto = ref(1)
+const rotacaoFoto = ref(0)
 
 let stream
 let socket
@@ -134,16 +151,29 @@ let bytesRecebidos = 0
 
 const tempoQr = computed(() => `${Math.floor(segundosQr.value / 60)}:${String(segundosQr.value % 60).padStart(2, '0')}`)
 const moeda = valor => valor.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })
+const estiloEdicao = computed(() => ({ transform: `rotate(${rotacaoFoto.value}deg) scale(${escalaFoto.value})` }))
+
+function restaurarEdicao() {
+  escalaFoto.value = 1
+  rotacaoFoto.value = 0
+}
+
+function girarFoto(graus) {
+  rotacaoFoto.value = (rotacaoFoto.value + graus + 360) % 360
+}
 
 function limparFoto() {
   if (fotoUrl.value) URL.revokeObjectURL(fotoUrl.value)
   foto.value = null
   fotoUrl.value = null
+  origemFoto.value = null
 }
 
-function definirFoto(arquivo) {
+function definirFoto(arquivo, origem) {
   limparFoto()
+  restaurarEdicao()
   foto.value = arquivo
+  origemFoto.value = origem
   fotoUrl.value = URL.createObjectURL(arquivo)
 }
 
@@ -179,7 +209,7 @@ async function capturar() {
   canvas.getContext('2d').drawImage(video.value, 0, 0)
   const blob = await new Promise(resolve => canvas.toBlob(resolve, 'image/jpeg', .92))
   if (!blob || sequenciaAtual !== sequenciaCaptura) return
-  definirFoto(new File([blob], 'foto.jpg', { type: 'image/jpeg' }))
+  definirFoto(new File([blob], 'foto.jpg', { type: 'image/jpeg' }), 'camera')
   pararCamera()
   tela.value = 'revisar'
 }
@@ -303,10 +333,10 @@ function prepararCanal(canalFoto) {
 
 async function concluirFotoRecebida() {
   if (!metadados || bytesRecebidos !== metadados.tamanho) throw new Error('A transferência ficou incompleta.')
-  definirFoto(new File(partes, metadados.nome || 'foto', { type: metadados.mime }))
+  definirFoto(new File(partes, metadados.nome || 'foto', { type: metadados.mime }), 'celular')
   if (canal?.readyState === 'open') canal.send(JSON.stringify({ tipo: 'recebida' }))
   setTimeout(encerrarTransferencia, 100)
-  tela.value = 'revisar'
+  tela.value = 'revisar-impressao'
 }
 
 function falharQr(erro) {
@@ -409,9 +439,18 @@ header p, .apoio, .status p { margin-top: 7px; color: #6b6b66; font-size: 14px; 
 .status { text-align: center; }
 .erro { color: #b52d2c; text-align: center; }
 .papel { width: 100%; flex: 1 0 280px; min-height: 280px; padding: 18px; background: #f8f7f3; border: 1px solid #ddd; display: grid; place-items: center; overflow: hidden; }
+.copia-foto { width: 100%; height: 100%; min-height: 0; overflow: hidden; }
 .papel img { width: 100%; height: 100%; object-fit: cover; min-height: 0; }
+.papel img.foto-contida { object-fit: contain; }
+.papel img { transition: transform .15s ease; }
 .papel.polaroid { padding: 22px 22px 70px; }
 .papel.oito_fotos_3x4 { grid-template-columns: repeat(4, 1fr); grid-template-rows: repeat(2, 1fr); gap: 5px; padding: 10px; }
+.editor-foto { display: flex; flex-direction: column; gap: 10px; flex: 0 0 auto; }
+.controle-tamanho { display: grid; grid-template-columns: auto minmax(0, 1fr) 48px; align-items: center; gap: 10px; font-size: 13px; font-weight: 700; }
+.controle-tamanho input { width: 100%; accent-color: #1c1c1a; }
+.controle-tamanho output { text-align: right; color: #6b6b66; }
+.controles-giro { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; }
+.controles-giro button { min-width: 0; padding: 10px 6px; border: 0; border-radius: 10px; background: #f0efe9; color: #1c1c1a; font-size: 12px; font-weight: 700; cursor: pointer; }
 .valor { font-size: 25px; }
 .tela > canvas { max-width: 100%; height: auto !important; }
 
