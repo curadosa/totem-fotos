@@ -30,8 +30,11 @@
       <div class="camera">
         <video v-show="cameraAtiva" ref="video" autoplay muted playsinline></video>
         <p v-if="!cameraAtiva">{{ erroCamera || 'Abrindo câmera...' }}</p>
+        <strong v-if="contadorCaptura !== null" class="contagem">{{ contadorCaptura }}</strong>
       </div>
-      <button class="botao primario" :disabled="!cameraAtiva" @click="capturar">Tirar foto</button>
+      <button class="botao primario" :disabled="!cameraAtiva || contadorCaptura !== null" @click="capturar">
+        {{ contadorCaptura !== null ? 'Prepare-se...' : 'Tirar foto' }}
+      </button>
       <button class="botao secundario" @click="voltarHome">Voltar</button>
     </section>
 
@@ -108,6 +111,7 @@ const fotoUrl = ref(null)
 const video = ref(null)
 const cameraAtiva = ref(false)
 const erroCamera = ref(null)
+const contadorCaptura = ref(null)
 const qrCanvas = ref(null)
 const pixCanvas = ref(null)
 const erroQr = ref(null)
@@ -122,6 +126,7 @@ let canal
 let relogio
 let temporizadorPagamento
 let temporizadorImpressao
+let sequenciaCaptura = 0
 let ofertaEmAndamento = false
 let metadados
 let partes = []
@@ -158,18 +163,30 @@ async function abrirCaptura() {
 }
 
 async function capturar() {
+  if (!cameraAtiva.value || contadorCaptura.value !== null) return
+  const sequenciaAtual = ++sequenciaCaptura
+
+  for (let numero = 3; numero >= 1; numero -= 1) {
+    contadorCaptura.value = numero
+    await new Promise(resolve => setTimeout(resolve, 1000))
+    if (sequenciaAtual !== sequenciaCaptura || !cameraAtiva.value) return
+  }
+
+  contadorCaptura.value = null
   const canvas = document.createElement('canvas')
   canvas.width = video.value.videoWidth
   canvas.height = video.value.videoHeight
   canvas.getContext('2d').drawImage(video.value, 0, 0)
   const blob = await new Promise(resolve => canvas.toBlob(resolve, 'image/jpeg', .92))
-  if (!blob) return
+  if (!blob || sequenciaAtual !== sequenciaCaptura) return
   definirFoto(new File([blob], 'foto.jpg', { type: 'image/jpeg' }))
   pararCamera()
   tela.value = 'revisar'
 }
 
 function pararCamera() {
+  sequenciaCaptura += 1
+  contadorCaptura.value = null
   stream?.getTracks().forEach(track => track.stop())
   stream = null
   cameraAtiva.value = false
@@ -382,9 +399,10 @@ header p, .apoio, .status p { margin-top: 7px; color: #6b6b66; font-size: 14px; 
 .produto span strong, .produto small { display: block; }
 .produto small { margin-top: 5px; color: #6b6b66; }
 .rodape { margin-top: auto; }
-.linha { flex-direction: row; }
-.camera, .preview { flex: 1 0 240px; min-height: 240px; border-radius: 16px; background: #2c2c2a; display: grid; place-items: center; overflow: hidden; color: #fff; }
+.linha { flex-direction: column; }
+.camera, .preview { position: relative; flex: 1 0 240px; min-height: 240px; border-radius: 16px; background: #2c2c2a; display: grid; place-items: center; overflow: hidden; color: #fff; }
 .camera video, .preview img { width: 100%; height: 100%; object-fit: cover; }
+.contagem { position: absolute; inset: 0; display: grid; place-items: center; background: #0005; color: #fff; font-size: clamp(72px, 24vw, 132px); line-height: 1; text-shadow: 0 3px 12px #0008; }
 .qr { align-items: center; }
 .qr-area { width: min(280px, 100%); aspect-ratio: 1; padding: clamp(10px, 3vw, 20px); border: 1px solid #e6e4dc; border-radius: 20px; display: grid; place-items: center; flex: 0 0 auto; }
 .qr-area canvas { width: min(240px, 100%) !important; height: auto !important; }
@@ -409,6 +427,5 @@ header p, .apoio, .status p { margin-top: 7px; color: #6b6b66; font-size: 14px; 
 @media (max-width: 380px) {
   .aplicacao { padding: 0; }
   .tela { width: 100%; height: 100dvh; border-radius: 0; }
-  .linha { flex-direction: column; }
 }
 </style>
